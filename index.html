@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Edge Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06090f;
+  --surface: #0d1117;
+  --surface2: #151d2b;
+  --surface3: #1b2538;
+  --border: #1e2d4a;
+  --border-light: #2a3f5f;
+  --text: #e1e7ef;
+  --text-mid: #8b9dc3;
+  --text-dim: #4a5f82;
+  --green: #00e676;
+  --green-dim: #00e67622;
+  --green-med: #00e67644;
+  --red: #ff5252;
+  --red-dim: #ff525222;
+  --amber: #ffab40;
+  --amber-dim: #ffab4022;
+  --blue: #448aff;
+  --blue-dim: #448aff22;
+  --cyan: #18ffff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ═══ HEADER ═══ */
+.header {
+  padding: 16px 20px 12px;
+  background: linear-gradient(180deg, #0a1020 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left h1 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--green);
+  letter-spacing: -0.5px;
+}
+
+.header-left .subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
+.bankroll-display {
+  text-align: right;
+}
+
+.bankroll-display .label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.bankroll-display .amount {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--green);
+  cursor: pointer;
+  position: relative;
+}
+
+.bankroll-display .amount:hover { text-decoration: underline; text-decoration-style: dotted; }
+
+.bankroll-edit {
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.bankroll-edit input {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  width: 80px;
+  background: var(--surface2);
+  border: 1px solid var(--green);
+  border-radius: 4px;
+  color: var(--green);
+  padding: 2px 6px;
+  text-align: right;
+}
+
+.bankroll-edit input:focus { outline: none; }
+
+.bankroll-edit button {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  padding: 4px 8px;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  color: var(--green);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ═══ NAV TABS ═══ */
+.nav {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar { display: none; }
+
+.nav button {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.nav button:hover { color: var(--text-mid); }
+.nav button.active { color: var(--green); border-bottom-color: var(--green); }
+
+.nav .refresh-btn {
+  margin-left: auto;
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 10px 16px;
+}
+
+.nav .refresh-btn:hover { color: var(--green); }
+
+/* ═══ TAB PANELS ═══ */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ═══ STATUS BAR ═══ */
+.status-bar {
+  padding: 8px 20px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.pulse-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* ═══ LEAGUE FILTERS ═══ */
+.league-filters {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.league-filters::-webkit-scrollbar { display: none; }
+
+.league-filters button {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.league-filters button:hover { border-color: var(--green); color: var(--text-mid); }
+.league-filters button.active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+.league-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--blue-dim);
+  color: var(--blue);
+  margin-right: 4px;
+  letter-spacing: 0.3px;
+}
+
+/* ═══ LOADING / EMPTY / ERROR ═══ */
+.state-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  color: var(--text-dim);
+  gap: 10px;
+  font-size: 13px;
+}
+
+.spinner {
+  width: 28px; height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══ MARKET CARDS ═══ */
+.cards { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  padding: 8px 4px 4px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  transition: border-color 0.15s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+
+.card.grade-high::before { background: var(--green); }
+.card.grade-med::before { background: var(--amber); }
+
+.card:hover { border-color: var(--border-light); }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.card-title { font-weight: 600; font-size: 14px; line-height: 1.3; padding-right: 8px; }
+.card-title .team-home, .card-title .team-away { transition: color 0.15s; }
+.card-title .fav { color: var(--green); }
+.card-league { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+.bet-target {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bet-target.split-warn {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+  font-size: 11px;
+}
+
+.bet-arrow {
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--green);
+  color: var(--bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.bet-side {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-mid);
+  margin-left: auto;
+}
+
+.price-cell.fav-cell {
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+
+.card-meta { text-align: right; flex-shrink: 0; }
+.card-time { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); }
+.card-live { font-size: 10px; font-weight: 600; color: var(--green); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.card-score-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.card-score-badge.high { background: var(--green-dim); color: var(--green); }
+.card-score-badge.med { background: var(--amber-dim); color: var(--amber); }
+.card-score-badge.low { background: var(--red-dim); color: var(--red); }
+
+.price-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.price-cell {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.price-cell .lbl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.price-cell .val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.price-cell .sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.checks-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.chk {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+}
+
+.chk.p { background: var(--green-dim); color: var(--green); }
+.chk.w { background: var(--amber-dim); color: var(--amber); }
+.chk.f { background: var(--red-dim); color: var(--red); }
+
+.bet-suggest {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-mid);
+  display: flex;
+  justify-content: space-between;
+}
+
+.bet-suggest .amt {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  color: var(--green);
+}
+
+/* ═══ CARD EXPANDED ═══ */
+.card-detail { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.card.expanded .card-detail { display: block; }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.detail-item {
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.detail-item .dlbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px; }
+.detail-item .dval { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; margin-top: 2px; }
+
+/* ═══ LIVE CHECKLIST ═══ */
+.live-panel { padding: 16px; }
+
+.live-match-select {
+  width: 100%;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  margin-bottom: 16px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.live-match-select:focus { outline: none; border-color: var(--green); }
+
+.live-section {
+  margin-bottom: 16px;
+}
+
+.live-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.live-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  transition: border-color 0.15s;
+}
+
+.live-input-row.checked { border-color: var(--green); background: var(--green-dim); }
+.live-input-row.failed { border-color: var(--red); background: var(--red-dim); }
+
+.live-input-row label {
+  font-size: 13px;
+  color: var(--text-mid);
+  flex: 1;
+}
+
+.live-input-row.checked label { color: var(--green); }
+.live-input-row.failed label { color: var(--red); }
+
+.live-input-row input[type="number"] {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  width: 60px;
+  padding: 4px 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  text-align: center;
+}
+
+.live-input-row input[type="number"]:focus { outline: none; border-color: var(--green); }
+
+.live-input-row .status-icon {
+  width: 24px;
+  text-align: center;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.live-verdict {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.live-verdict .big {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.live-verdict .big.go { color: var(--green); }
+.live-verdict .big.wait { color: var(--amber); }
+.live-verdict .big.skip { color: var(--red); }
+
+.live-verdict .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+/* ═══ BET TRACKER ═══ */
+.tracker-panel { padding: 16px; }
+
+.tracker-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tracker-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.tracker-stat .ts-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.tracker-stat .ts-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.tracker-stat .ts-val.positive { color: var(--green); }
+.tracker-stat .ts-val.negative { color: var(--red); }
+.tracker-stat .ts-val.neutral { color: var(--text); }
+
+.add-bet-btn {
+  width: 100%;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  color: var(--green);
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: background 0.15s;
+}
+
+.add-bet-btn:hover { background: var(--green-med); }
+
+.bet-form {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.bet-form.open { display: block; }
+
+.form-row {
+  margin-bottom: 10px;
+}
+
+.form-row label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.form-row input, .form-row select {
+  width: 100%;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.form-row input:focus, .form-row select:focus { outline: none; border-color: var(--green); }
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.form-actions button {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.btn-save { background: var(--green-dim); border-color: var(--green) !important; color: var(--green); }
+.btn-cancel { background: var(--surface2); color: var(--text-dim); }
+
+.bet-history { display: flex; flex-direction: column; gap: 6px; }
+
+.bet-entry {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bet-entry .be-left { flex: 1; }
+.bet-entry .be-match { font-size: 13px; font-weight: 500; }
+.bet-entry .be-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.bet-entry .be-right { text-align: right; }
+
+.bet-entry .be-pnl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bet-entry .be-pnl.win { color: var(--green); }
+.bet-entry .be-pnl.loss { color: var(--red); }
+.bet-entry .be-pnl.pending { color: var(--amber); }
+
+.bet-entry .be-amt { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); }
+
+.bet-entry .be-delete {
+  font-size: 10px;
+  color: var(--text-dim);
+  cursor: pointer;
+  margin-left: 10px;
+  padding: 4px;
+}
+
+.bet-entry .be-delete:hover { color: var(--red); }
+
+/* ═══ RULES PANEL ═══ */
+.rules-panel { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+
+.rule {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.rule h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  margin-bottom: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.rule p {
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.6;
+}
+
+.rule .rv {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (min-width: 768px) {
+  body { display: flex; flex-direction: column; }
+  
+  .cards { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 10px;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .cards .section-label { grid-column: 1 / -1; }
+  
+  .tracker-summary { grid-template-columns: repeat(6, 1fr); }
+  
+  .detail-grid { grid-template-columns: repeat(4, 1fr); }
+  
+  .rules-panel { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    max-width: 1000px; 
+    margin: 0 auto; 
+    width: 100%; 
+  }
+  
+  .live-panel { max-width: 600px; margin: 0 auto; width: 100%; }
+  .tracker-panel { max-width: 800px; margin: 0 auto; width: 100%; }
+}
+
+@media (max-width: 380px) {
+  .price-row { grid-template-columns: 1fr 1fr; }
+  .tracker-summary { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>EDGE FINDER</h1>
+    <div class="subtitle">Kalshi Soccer System</div>
+  </div>
+  <div class="bankroll-display">
+    <div class="label">Bankroll</div>
+    <div class="amount" id="bankrollShow" onclick="toggleBankrollEdit()">$64</div>
+    <div class="bankroll-edit" id="bankrollEditBox">
+      <input type="number" id="bankrollInput" value="215.40" min="0" step="0.01">
+      <button onclick="saveBankroll()">OK</button>
+    </div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="active" onclick="showPanel('markets',this)">Markets</button>
+  <button onclick="showPanel('live',this)">Live</button>
+  <button onclick="showPanel('tracker',this)">Tracker</button>
+  <button onclick="showPanel('rules',this)">System</button>
+  <button class="refresh-btn" onclick="fetchMarkets()">Refresh</button>
+</nav>
+
+<!-- ═══ MARKETS PANEL ═══ -->
+<div id="panel-markets" class="panel active">
+  <div class="status-bar">
+    <div><span class="pulse-dot"></span><span id="statusText">Loading...</span></div>
+    <div id="lastUpdate"></div>
+  </div>
+  <div class="league-filters" id="leagueFilters">
+    <button class="active" onclick="setLeagueFilter('all', this)">All</button>
+  </div>
+  <div id="marketsContent">
+    <div class="state-msg"><div class="spinner"></div><div>Fetching soccer markets...</div></div>
+  </div>
+</div>
+
+<!-- ═══ LIVE CHECKLIST PANEL ═══ -->
+<div id="panel-live" class="panel">
+  <div class="live-panel">
+    <div class="section-label" style="padding:8px 0 12px">Live Game Checklist</div>
+    
+    <select class="live-match-select" id="liveMatchSelect">
+      <option value="">-- Select a match or type manually --</option>
+    </select>
+
+    <div class="live-section">
+      <div class="live-section-title">Game State</div>
+      <div class="live-input-row" id="lr-goal">
+        <label>First goal scored by your team</label>
+        <input type="number" id="live-yourGoals" value="0" min="0" max="20" onchange="evalLive()">
+        <div class="status-icon" id="si-goal">--</div>
+      </div>
+      <div class="live-input-row" id="lr-minute">
+        <label>Current minute</label>
+        <input type="number" id="live-minute" value="0" min="0" max="120" onchange="evalLive()">
+        <div class="status-icon" id="si-minute">--</div>
+      </div>
+    </div>
+
+    <div class="live-section">
+      <div class="live-section-title">Dominance Stats</div>
+      <div class="live-input-row" id="lr-poss">
+        <label>Your possession %</label>
+        <input type="number" id="live-poss" value="50" min="0" max="100" onchange="evalLive()">
+        <div class="status-icon" id="si-poss">--</div>
+      </div>
+      <div class="live-input-row" id="lr-sog">
+        <label>Shots on goal (yours)</label>
+        <input type="number" id="live-sogYou" value="0" min="0" max="50" onchange="evalLive()">
+        <div class="status-icon" id="si-sog">--</div>
+      </div>
+      <div class="live-input-row" id="lr-sogOpp">
+        <label>Shots on goal (opponent)</label>
+        <input type="number" id="live-sogOpp" value="0" min="0" max="50" onchange="evalLive()">
+        <div class="status-icon"></div>
+      </div>
+      <div class="live-input-row" id="lr-sa">
+        <label>Shot attempts (yours)</label>
+        <input type="number" id="live-saYou" value="0" min="0" max="50" onchange="evalLive()">
+        <div class="status-icon" id="si-sa">--</div>
+      </div>
+      <div class="live-input-row" id="lr-saOpp">
+        <label>Shot attempts (opponent)</label>
+        <input type="number" id="live-saOpp" value="0" min="0" max="50" onchange="evalLive()">
+        <div class="status-icon"></div>
+      </div>
+      <div class="live-input-row" id="lr-xg">
+        <label>xG difference (yours - theirs)</label>
+        <input type="number" id="live-xgDiff" value="0" min="-5" max="5" step="0.1" onchange="evalLive()">
+        <div class="status-icon" id="si-xg">--</div>
+      </div>
+    </div>
+
+    <div class="live-section">
+      <div class="live-section-title">Market</div>
+      <div class="live-input-row" id="lr-prob">
+        <label>Kalshi probability %</label>
+        <input type="number" id="live-prob" value="50" min="0" max="100" onchange="evalLive()">
+        <div class="status-icon" id="si-prob">--</div>
+      </div>
+      <div class="live-input-row" id="lr-trend">
+        <label>Probability trending up?</label>
+        <select id="live-trend" onchange="evalLive()" style="font-family:'Outfit';font-size:13px;width:60px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);text-align:center;">
+          <option value="yes">Yes</option>
+          <option value="no" selected>No</option>
+        </select>
+        <div class="status-icon" id="si-trend">--</div>
+      </div>
+    </div>
+
+    <div class="live-verdict" id="liveVerdict">
+      <div class="big wait">ENTER DATA</div>
+      <div class="sub">Fill in the live stats above</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TRACKER PANEL ═══ -->
+<div id="panel-tracker" class="panel">
+  <div class="tracker-panel">
+    <div class="section-label" style="padding:8px 0 12px">Bet Tracker</div>
+    
+    <div class="tracker-summary" id="trackerSummary">
+      <div class="tracker-stat"><div class="ts-label">Bets</div><div class="ts-val neutral" id="ts-total">0</div></div>
+      <div class="tracker-stat"><div class="ts-label">Wins</div><div class="ts-val positive" id="ts-wins">0</div></div>
+      <div class="tracker-stat"><div class="ts-label">Losses</div><div class="ts-val negative" id="ts-losses">0</div></div>
+      <div class="tracker-stat"><div class="ts-label">Win Rate</div><div class="ts-val neutral" id="ts-winrate">--</div></div>
+      <div class="tracker-stat"><div class="ts-label">P&L</div><div class="ts-val neutral" id="ts-pnl">$0</div></div>
+      <div class="tracker-stat"><div class="ts-label">ROI</div><div class="ts-val neutral" id="ts-roi">--</div></div>
+    </div>
+
+    <button class="add-bet-btn" onclick="toggleBetForm()">+ Log a Bet</button>
+
+    <div class="bet-form" id="betForm">
+      <div class="form-row">
+        <label>Match</label>
+        <input type="text" id="bf-match" placeholder="e.g. Chivas vs Monterrey">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-row">
+          <label>League</label>
+          <select id="bf-league">
+            <option>Liga MX</option><option>La Liga</option><option>EPL</option>
+            <option>Serie A</option><option>Bundesliga</option><option>Ligue 1</option>
+            <option>Champions League</option><option>Europa League</option>
+            <option>MLS</option><option>Brasileiro Serie A</option>
+            <option>Argentina Primera</option><option>Colombian Liga</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Market</label>
+          <select id="bf-market">
+            <option>Match Winner</option><option>Over/Under</option><option>Both Score</option>
+            <option>Correct Score</option><option>Handicap</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div class="form-row">
+          <label>Your Prob %</label>
+          <input type="number" id="bf-prob" placeholder="65" min="0" max="100">
+        </div>
+        <div class="form-row">
+          <label>Kalshi Price</label>
+          <input type="number" id="bf-price" placeholder="0.55" min="0" max="1" step="0.01">
+        </div>
+        <div class="form-row">
+          <label>Bet $</label>
+          <input type="number" id="bf-amount" placeholder="10" min="0" step="0.01">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-row">
+          <label>Outcome</label>
+          <select id="bf-outcome">
+            <option value="pending">Pending</option>
+            <option value="W">Win</option>
+            <option value="L">Loss</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Payout $</label>
+          <input type="number" id="bf-payout" placeholder="0" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <input type="text" id="bf-notes" placeholder="Optional notes">
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" onclick="saveBet()">Save Bet</button>
+        <button class="btn-cancel" onclick="toggleBetForm()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="bet-history" id="betHistory">
+      <div class="state-msg" style="padding:30px"><div>No bets logged yet.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RULES PANEL ═══ -->
+<div id="panel-rules" class="panel">
+  <div class="rules-panel">
+    <div class="rule">
+      <h3>01 PRE-MATCH</h3>
+      <p>Probability <span class="rv">65%+</span>. Volume <span class="rv">$25k min</span>. Chart <span class="rv">flat/up</span>. Any fail = skip.</p>
+    </div>
+    <div class="rule">
+      <h3>02 STANDINGS</h3>
+      <p>Your team <span class="rv">top half</span>. Opponent <span class="rv">bottom half / poor form</span>. Avoid <span class="rv">3+ loss streaks</span>.</p>
+    </div>
+    <div class="rule">
+      <h3>03 LIVE ENTRY</h3>
+      <p>First goal yours. Possession <span class="rv">60%+</span>. SOG <span class="rv">2:1</span>. Attempts <span class="rv">2:1</span>. xG <span class="rv">+0.3</span>. Prob <span class="rv">trending up</span>.</p>
+    </div>
+    <div class="rule">
+      <h3>04 TIMING</h3>
+      <p>Best: after 1st goal. Never <span class="rv">44-47'</span>. Caution <span class="rv">0-0 after 65'</span>. Too early <span class="rv">under 10'</span>.</p>
+    </div>
+    <div class="rule">
+      <h3>05 MULTIPLIER</h3>
+      <p><span class="rv">1.40x+</span> proceed. <span class="rv">1.30-1.39x</span> high conf only. <span class="rv">Below 1.30x</span> skip.</p>
+    </div>
+    <div class="rule">
+      <h3>06 CASH OUT</h3>
+      <p>Gap <span class="rv">&lt;10%</span> of max = cash out. Up <span class="rv">2-0</span> consider it. After <span class="rv">85'</span> always. Opponent scores = exit.</p>
+    </div>
+    <div class="rule">
+      <h3>07 BANKROLL</h3>
+      <p>Max <span class="rv">15%</span> best setups. Standard <span class="rv">5-10%</span>. Reserve <span class="rv">15-20%</span>. After loss = reduce size.</p>
+    </div>
+    <div class="rule">
+      <h3>INSTANT SKIP</h3>
+      <p>Three-way split. Vol <span class="rv">&lt;$10k</span>. Prob down in 0-0. Equal xG. Suspended play. <span class="rv">3+ loss streak</span>. Mult <span class="rv">&lt;1.30x</span>. Opp just scored.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══ STATE ═══ */
+let bankroll = parseFloat(localStorage.getItem('ef_bankroll') || '215.40');
+let bets = JSON.parse(localStorage.getItem('ef_bets') || '[]');
+let allMarkets = [];
+
+/* ═══ BANKROLL ═══ */
+function toggleBankrollEdit() {
+  const show = document.getElementById('bankrollShow');
+  const edit = document.getElementById('bankrollEditBox');
+  if (edit.style.display === 'flex') {
+    edit.style.display = 'none';
+    show.style.display = 'block';
+  } else {
+    document.getElementById('bankrollInput').value = bankroll;
+    edit.style.display = 'flex';
+    show.style.display = 'none';
+    document.getElementById('bankrollInput').focus();
+  }
+}
+
+function saveBankroll() {
+  bankroll = parseFloat(document.getElementById('bankrollInput').value) || 0;
+  localStorage.setItem('ef_bankroll', bankroll);
+  document.getElementById('bankrollShow').textContent = '$' + bankroll.toFixed(0);
+  toggleBankrollEdit();
+  if (allMarkets.length) renderMarkets(allMarkets);
+}
+
+document.getElementById('bankrollShow').textContent = '$' + bankroll.toFixed(0);
+
+/* ═══ NAV ═══ */
+function showPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav button[onclick]').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ═══ MARKET EVALUATION ═══ */
+function parseTeams(title) {
+  // Try to extract two team names from common patterns
+  // "Team A vs Team B", "Team A vs. Team B", "Team A v Team B"
+  // Also handle " - Winner", " - Moneyline", etc suffixes
+  let cleaned = title.replace(/\s*[-–]\s*(Winner|Moneyline|Match Winner|Reg(?:ular)?\s*Time|1X2).*$/i, '');
+  cleaned = cleaned.replace(/\?$/, '').replace(/^Will\s+/i, '').replace(/\s+win\b.*$/i, '');
+  
+  const separators = [' vs ', ' vs. ', ' v ', ' - ', ' – '];
+  for (const sep of separators) {
+    const idx = cleaned.toLowerCase().indexOf(sep.toLowerCase());
+    if (idx > 0) {
+      const home = cleaned.substring(0, idx).trim();
+      const away = cleaned.substring(idx + sep.length).trim();
+      if (home && away) return { home, away };
+    }
+  }
+  
+  return { home: cleaned.trim(), away: '' };
+}
+
+function evaluate(m) {
+  const yb = parseFloat(m.yes_bid_dollars) || 0;
+  const nb = parseFloat(m.no_bid_dollars) || 0;
+  const vol = parseFloat(m.volume_fp) || 0;
+  const favP = Math.max(yb, nb) * 100;
+  const favPrice = Math.max(yb, nb);
+  const mult = favPrice > 0 ? 1 / favPrice : 0;
+  const diff = Math.abs(yb - nb) * 100;
+
+  // Determine which side is the favorite
+  // On Kalshi, "Yes" typically = the first team listed (home team) wins
+  const teams = parseTeams(m.title);
+  let favSide, favTeam, underdogTeam;
+  if (yb >= nb) {
+    favSide = 'yes';
+    favTeam = teams.home || 'Yes';
+    underdogTeam = teams.away || 'No';
+  } else {
+    favSide = 'no';
+    favTeam = teams.away || 'No';
+    underdogTeam = teams.home || 'Yes';
+  }
+  
+  // If it's basically even, no clear favorite
+  const isSplit = diff < 10;
+
+  const checks = [];
+
+  // Probability
+  if (favP >= 65) checks.push({ l: 'PROB ' + favP.toFixed(0) + '%', s: 'p' });
+  else if (favP >= 55) checks.push({ l: 'PROB ' + favP.toFixed(0) + '%', s: 'w' });
+  else checks.push({ l: 'PROB ' + favP.toFixed(0) + '%', s: 'f' });
+
+  // Volume
+  if (vol >= 25000) checks.push({ l: 'VOL $' + (vol/1000).toFixed(0) + 'k', s: 'p' });
+  else if (vol >= 10000) checks.push({ l: 'VOL $' + (vol/1000).toFixed(0) + 'k', s: 'w' });
+  else checks.push({ l: 'VOL $' + (vol < 1000 ? vol.toFixed(0) : (vol/1000).toFixed(1) + 'k'), s: 'f' });
+
+  // Multiplier
+  if (mult >= 1.40) checks.push({ l: mult.toFixed(2) + 'x', s: 'p' });
+  else if (mult >= 1.30) checks.push({ l: mult.toFixed(2) + 'x', s: 'w' });
+  else if (mult > 0) checks.push({ l: mult.toFixed(2) + 'x', s: 'f' });
+
+  // Split check
+  if (isSplit) checks.push({ l: 'SPLIT', s: 'f' });
+
+  const pass = checks.filter(c => c.s === 'p').length;
+  const fail = checks.filter(c => c.s === 'f').length;
+  let grade = 'low';
+  if (pass >= 3) grade = 'high';
+  else if (pass >= 2 && fail === 0) grade = 'med';
+  else if (pass >= 1 && fail <= 1) grade = 'med';
+
+  let sugBet = 0;
+  if (grade === 'high') sugBet = bankroll * 0.15;
+  else if (grade === 'med') sugBet = bankroll * 0.08;
+
+  return { checks, grade, pass, mult, favP, vol, sugBet, yb, nb, favTeam, underdogTeam, favSide, isSplit, teams };
+}
+
+function fmtTime(d) {
+  const dt = new Date(d);
+  const now = new Date();
+  if (dt < now) return { t: 'LIVE', live: true };
+  const h = (dt - now) / 36e5;
+  if (h < 24) return { t: dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), live: false };
+  return { t: dt.toLocaleDateString([], { month: 'short', day: 'numeric' }), live: false };
+}
+
+/* ═══ RENDER MARKETS ═══ */
+function renderMarkets(markets) {
+  allMarkets = markets;
+  const c = document.getElementById('marketsContent');
+  if (!markets.length) { c.innerHTML = '<div class="state-msg">No soccer markets found right now.</div>'; return; }
+
+  // Build league filter buttons
+  buildLeagueFilters(markets);
+
+  // Apply league filter
+  let filtered = markets;
+  if (activeLeagueFilter !== 'all') {
+    filtered = markets.filter(m => m._league === activeLeagueFilter);
+  }
+
+  const evald = filtered.map(m => ({ m, e: evaluate(m) })).filter(x => x.e.grade !== 'low');
+  evald.sort((a, b) => {
+    const o = { high: 0, med: 1 };
+    return (o[a.e.grade] || 1) !== (o[b.e.grade] || 1) ? (o[a.e.grade] || 1) - (o[b.e.grade] || 1) : b.e.vol - a.e.vol;
+  });
+
+  // Populate live match dropdown
+  const sel = document.getElementById('liveMatchSelect');
+  sel.innerHTML = '<option value="">-- Select a match --</option>';
+  evald.forEach(({ m }) => {
+    const opt = document.createElement('option');
+    opt.value = m.title;
+    opt.textContent = m.title;
+    sel.appendChild(opt);
+  });
+
+  if (!evald.length) {
+    const skipped = filtered.length;
+    c.innerHTML = `<div class="state-msg">No matches pass your filters right now.<br><span style="font-size:11px;color:var(--text-dim)">${skipped} game${skipped !== 1 ? 's' : ''} filtered out. Refresh later.</span></div>`;
+    return;
+  }
+
+  let html = '';
+  let curGrade = '';
+  const labels = { high: 'Potential Plays', med: 'Watch List', low: 'Skip' };
+
+  evald.forEach(({ m, e }, idx) => {
+    if (e.grade !== curGrade) {
+      curGrade = e.grade;
+      html += `<div class="section-label">${labels[e.grade]}</div>`;
+    }
+
+    const tm = fmtTime(m.close_time || m.latest_expiration_time || '');
+    const volColor = e.vol >= 25000 ? 'var(--green)' : e.vol >= 10000 ? 'var(--amber)' : 'var(--red)';
+    const badgeCls = e.grade === 'high' ? 'high' : e.grade === 'med' ? 'med' : 'low';
+    const leagueLabel = LEAGUE_LABELS[m._league] || (m._league || 'Soccer').toUpperCase();
+
+    html += `
+      <div class="card grade-${e.grade}" onclick="this.classList.toggle('expanded')">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${e.isSplit ? m.title : `<span class="team-home ${e.favSide === 'yes' ? 'fav' : ''}">${e.teams.home}</span> vs <span class="team-away ${e.favSide === 'no' ? 'fav' : ''}">${e.teams.away || '?'}</span>`}</div>
+            <div class="card-league"><span class="league-tag">${leagueLabel}</span> ${m.event_ticker || ''}</div>
+          </div>
+          <div class="card-meta">
+            ${tm.live ? '<div class="card-live">LIVE</div>' : ''}
+            <div class="card-time">${tm.t}</div>
+            <div class="card-score-badge ${badgeCls}">${e.pass}/${e.checks.length}</div>
+          </div>
+        </div>
+
+        ${!e.isSplit && e.grade !== 'low' ? `<div class="bet-target"><span class="bet-arrow">BET</span> ${e.favTeam} <span class="bet-side">(${e.favSide.toUpperCase()} @ $${(e.favSide === 'yes' ? e.yb : e.nb).toFixed(2)})</span></div>` : ''}
+        ${e.isSplit ? '<div class="bet-target split-warn">No clear favorite - SKIP</div>' : ''}
+
+        <div class="price-row">
+          <div class="price-cell ${e.favSide === 'yes' && !e.isSplit ? 'fav-cell' : ''}">
+            <div class="lbl">${e.teams.home || 'Yes'}</div>
+            <div class="val" style="color:${e.yb >= 0.65 ? 'var(--green)' : 'var(--text)'}">$${e.yb.toFixed(2)}</div>
+            <div class="sub">${(e.yb * 100).toFixed(0)}%</div>
+          </div>
+          <div class="price-cell ${e.favSide === 'no' && !e.isSplit ? 'fav-cell' : ''}">
+            <div class="lbl">${e.teams.away || 'No'}</div>
+            <div class="val" style="color:${e.nb >= 0.65 ? 'var(--green)' : 'var(--text)'}">$${e.nb.toFixed(2)}</div>
+            <div class="sub">${(e.nb * 100).toFixed(0)}%</div>
+          </div>
+          <div class="price-cell">
+            <div class="lbl">Volume</div>
+            <div class="val" style="color:${volColor}">${e.vol >= 1000 ? '$' + (e.vol/1000).toFixed(1) + 'k' : '$' + e.vol.toFixed(0)}</div>
+            <div class="sub">traded</div>
+          </div>
+        </div>
+
+        <div class="checks-row">
+          ${e.checks.map(c => `<span class="chk ${c.s}">${c.l}</span>`).join('')}
+        </div>
+
+        ${e.sugBet > 0 ? `<div class="bet-suggest"><span>Suggested max bet</span><span class="amt">$${e.sugBet.toFixed(2)}</span></div>` : ''}
+
+        <div class="card-detail">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="dlbl">Multiplier</div><div class="dval" style="color:${e.mult >= 1.40 ? 'var(--green)' : e.mult >= 1.30 ? 'var(--amber)' : 'var(--red)'}">${e.mult.toFixed(2)}x</div></div>
+            <div class="detail-item"><div class="dlbl">Fav Prob</div><div class="dval">${e.favP.toFixed(1)}%</div></div>
+            <div class="detail-item"><div class="dlbl">Max Bet (15%)</div><div class="dval">$${(bankroll * 0.15).toFixed(2)}</div></div>
+            <div class="detail-item"><div class="dlbl">Std Bet (8%)</div><div class="dval">$${(bankroll * 0.08).toFixed(2)}</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  c.innerHTML = '<div class="cards">' + html + '</div>';
+}
+
+/* ═══ LIVE CHECKLIST ═══ */
+function evalLive() {
+  const goals = parseInt(document.getElementById('live-yourGoals').value) || 0;
+  const minute = parseInt(document.getElementById('live-minute').value) || 0;
+  const poss = parseInt(document.getElementById('live-poss').value) || 0;
+  const sogY = parseInt(document.getElementById('live-sogYou').value) || 0;
+  const sogO = parseInt(document.getElementById('live-sogOpp').value) || 0;
+  const saY = parseInt(document.getElementById('live-saYou').value) || 0;
+  const saO = parseInt(document.getElementById('live-saOpp').value) || 0;
+  const xgD = parseFloat(document.getElementById('live-xgDiff').value) || 0;
+  const prob = parseInt(document.getElementById('live-prob').value) || 0;
+  const trend = document.getElementById('live-trend').value;
+
+  let passed = 0;
+  let total = 7;
+  let warnings = [];
+
+  // Goal
+  const goalOk = goals >= 1;
+  setRow('lr-goal', goalOk);
+  document.getElementById('si-goal').textContent = goalOk ? '++' : '--';
+  if (goalOk) passed++;
+
+  // Possession
+  const possOk = poss >= 60;
+  setRow('lr-poss', possOk);
+  document.getElementById('si-poss').textContent = possOk ? '++' : '--';
+  if (possOk) passed++;
+
+  // SOG ratio
+  const sogOk = sogO > 0 ? (sogY / sogO) >= 2 : sogY >= 2;
+  setRow('lr-sog', sogOk);
+  document.getElementById('si-sog').textContent = sogOk ? '++' : '--';
+  if (sogOk) passed++;
+
+  // Shot attempts ratio
+  const saOk = saO > 0 ? (saY / saO) >= 2 : saY >= 2;
+  setRow('lr-sa', saOk);
+  document.getElementById('si-sa').textContent = saOk ? '++' : '--';
+  if (saOk) passed++;
+
+  // xG
+  const xgOk = xgD >= 0.3;
+  setRow('lr-xg', xgOk);
+  document.getElementById('si-xg').textContent = xgOk ? '++' : '--';
+  if (xgOk) passed++;
+
+  // Prob
+  const probOk = prob >= 65;
+  setRow('lr-prob', probOk);
+  document.getElementById('si-prob').textContent = probOk ? '++' : '--';
+  if (probOk) passed++;
+
+  // Trend
+  const trendOk = trend === 'yes';
+  setRow('lr-trend', trendOk);
+  document.getElementById('si-trend').textContent = trendOk ? '++' : '--';
+  if (trendOk) passed++;
+
+  // Timing warnings
+  if (minute >= 44 && minute <= 47) warnings.push('DANGER ZONE 44-47 min');
+  if (minute < 10 && minute > 0) warnings.push('Too early, under 10 min');
+  if (goals === 0 && minute >= 65) warnings.push('0-0 after 65 min - caution');
+
+  // Minute indicator
+  const minuteOk = minute >= 10 && !(minute >= 44 && minute <= 47);
+  setRow('lr-minute', minute === 0 ? null : minuteOk);
+  document.getElementById('si-minute').textContent = minute === 0 ? '--' : (minuteOk ? '++' : '!!');
+
+  // Verdict
+  const v = document.getElementById('liveVerdict');
+  if (passed >= 6 && warnings.length === 0) {
+    v.innerHTML = `<div class="big go">GO - ${passed}/${total}</div><div class="sub">All major triggers met. Enter based on multiplier.</div>`;
+  } else if (passed >= 4) {
+    v.innerHTML = `<div class="big wait">WATCH - ${passed}/${total}</div><div class="sub">${warnings.length ? warnings.join('. ') : 'Getting close. Wait for more triggers.'}</div>`;
+  } else {
+    v.innerHTML = `<div class="big skip">WAIT - ${passed}/${total}</div><div class="sub">${warnings.length ? warnings.join('. ') : 'Not enough triggers met yet.'}</div>`;
+  }
+}
+
+function setRow(id, ok) {
+  const el = document.getElementById(id);
+  el.classList.remove('checked', 'failed');
+  if (ok === true) el.classList.add('checked');
+  else if (ok === false) el.classList.add('failed');
+}
+
+/* ═══ BET TRACKER ═══ */
+function toggleBetForm() {
+  document.getElementById('betForm').classList.toggle('open');
+}
+
+function saveBet() {
+  const bet = {
+    id: Date.now(),
+    date: new Date().toISOString().split('T')[0],
+    match: document.getElementById('bf-match').value || 'Unknown',
+    league: document.getElementById('bf-league').value,
+    market: document.getElementById('bf-market').value,
+    prob: parseFloat(document.getElementById('bf-prob').value) || 0,
+    price: parseFloat(document.getElementById('bf-price').value) || 0,
+    amount: parseFloat(document.getElementById('bf-amount').value) || 0,
+    outcome: document.getElementById('bf-outcome').value,
+    payout: parseFloat(document.getElementById('bf-payout').value) || 0,
+    notes: document.getElementById('bf-notes').value
+  };
+
+  bets.unshift(bet);
+  localStorage.setItem('ef_bets', JSON.stringify(bets));
+  toggleBetForm();
+  renderBets();
+
+  // Clear form
+  document.getElementById('bf-match').value = '';
+  document.getElementById('bf-prob').value = '';
+  document.getElementById('bf-price').value = '';
+  document.getElementById('bf-amount').value = '';
+  document.getElementById('bf-payout').value = '';
+  document.getElementById('bf-notes').value = '';
+  document.getElementById('bf-outcome').value = 'pending';
+}
+
+function deleteBet(id) {
+  if (!confirm('Delete this bet?')) return;
+  bets = bets.filter(b => b.id !== id);
+  localStorage.setItem('ef_bets', JSON.stringify(bets));
+  renderBets();
+}
+
+function renderBets() {
+  const hist = document.getElementById('betHistory');
+  
+  // Summary
+  const resolved = bets.filter(b => b.outcome !== 'pending');
+  const wins = resolved.filter(b => b.outcome === 'W').length;
+  const losses = resolved.filter(b => b.outcome === 'L').length;
+  const totalWagered = resolved.reduce((s, b) => s + b.amount, 0);
+  const totalPnl = resolved.reduce((s, b) => s + (b.payout - b.amount), 0);
+  const winRate = resolved.length > 0 ? (wins / resolved.length * 100) : 0;
+  const roi = totalWagered > 0 ? (totalPnl / totalWagered * 100) : 0;
+
+  document.getElementById('ts-total').textContent = bets.length;
+  document.getElementById('ts-wins').textContent = wins;
+  document.getElementById('ts-losses').textContent = losses;
+  document.getElementById('ts-winrate').textContent = resolved.length > 0 ? winRate.toFixed(0) + '%' : '--';
+  
+  const pnlEl = document.getElementById('ts-pnl');
+  pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2);
+  pnlEl.className = 'ts-val ' + (totalPnl > 0 ? 'positive' : totalPnl < 0 ? 'negative' : 'neutral');
+
+  const roiEl = document.getElementById('ts-roi');
+  roiEl.textContent = resolved.length > 0 ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : '--';
+  roiEl.className = 'ts-val ' + (roi > 0 ? 'positive' : roi < 0 ? 'negative' : 'neutral');
+
+  // History
+  if (!bets.length) { hist.innerHTML = '<div class="state-msg" style="padding:30px">No bets logged yet.</div>'; return; }
+
+  hist.innerHTML = bets.map(b => {
+    const pnl = b.payout - b.amount;
+    const pnlCls = b.outcome === 'W' ? 'win' : b.outcome === 'L' ? 'loss' : 'pending';
+    const pnlText = b.outcome === 'pending' ? 'Pending' : (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
+    const edge = b.prob - (b.price * 100);
+
+    return `
+      <div class="bet-entry">
+        <div class="be-left">
+          <div class="be-match">${b.match}</div>
+          <div class="be-meta">${b.date} / ${b.league} / ${b.market}${edge ? ' / Edge: ' + edge.toFixed(1) + '%' : ''}</div>
+          ${b.notes ? `<div class="be-meta" style="color:var(--text-mid)">${b.notes}</div>` : ''}
+        </div>
+        <div class="be-right">
+          <div class="be-pnl ${pnlCls}">${pnlText}</div>
+          <div class="be-amt">$${b.amount.toFixed(2)} bet</div>
+        </div>
+        <div class="be-delete" onclick="event.stopPropagation();deleteBet(${b.id})">X</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ═══ LEAGUE CONFIG ═══ */
+const PRIORITY_LEAGUES = [
+  'liga mx', 'epl', 'la liga', 'serie a', 'bundesliga', 'ligue 1',
+  'champions league', 'ucl', 'europa league', 'mls',
+  'brasileiro serie a', 'argentina primera division',
+  'colombian liga dimayor'
+];
+
+const LEAGUE_LABELS = {
+  'all': 'All',
+  'liga mx': 'Liga MX',
+  'epl': 'EPL',
+  'la liga': 'La Liga',
+  'serie a': 'Serie A',
+  'bundesliga': 'Bundesliga',
+  'ligue 1': 'Ligue 1',
+  'champions league': 'UCL',
+  'europa league': 'Europa',
+  'mls': 'MLS',
+  'brasileiro serie a': 'Brasil',
+  'argentina primera division': 'Argentina',
+  'colombian liga dimayor': 'Colombia'
+};
+
+let activeLeagueFilter = 'all';
+
+function detectLeague(m) {
+  const ev = (m.event_ticker || '').toLowerCase().replace(/[-_]/g, ' ');
+  const title = (m.title || '').toLowerCase();
+  const sub = (m.yes_sub_title || '').toLowerCase();
+  const combined = ev + ' ' + title + ' ' + sub;
+  
+  if (combined.includes('liga mx')) return 'liga mx';
+  if (combined.includes('epl') || combined.includes('premier league')) return 'epl';
+  if (combined.includes('la liga') || combined.includes('laliga')) return 'la liga';
+  if (combined.includes('serie a') && !combined.includes('serie b') && !combined.includes('brasileiro serie a')) return 'serie a';
+  if (combined.includes('bundesliga') && !combined.includes('bundesliga 2')) return 'bundesliga';
+  if (combined.includes('ligue 1')) return 'ligue 1';
+  if (combined.includes('champions league') || combined.includes('ucl')) return 'champions league';
+  if (combined.includes('europa league')) return 'europa league';
+  if (combined.includes('mls')) return 'mls';
+  if (combined.includes('brasileiro') || combined.includes('brazil')) return 'brasileiro serie a';
+  if (combined.includes('argentina primera') || combined.includes('argentina')) return 'argentina primera division';
+  if (combined.includes('colombian') || combined.includes('dimayor') || combined.includes('colombia')) return 'colombian liga dimayor';
+  
+  // Secondary detection for common team names
+  const ligaMxTeams = ['chivas','america','cruz azul','monterrey','tigres','toluca','santos laguna','necaxa','leon','pumas','atlas','pachuca','puebla','mazatlan','queretaro','tijuana','juarez','guadalajara'];
+  const eplTeams = ['arsenal','liverpool','man city','manchester city','chelsea','tottenham','man united','manchester united','newcastle','aston villa','brighton','west ham','everton','fulham','crystal palace','wolves','bournemouth','nottingham','brentford','ipswich','leicester','southampton'];
+  const laLigaTeams = ['real madrid','barcelona','atletico madrid','sevilla','real sociedad','villarreal','athletic bilbao','betis','girona','valencia','celta vigo','getafe','osasuna','mallorca','rayo vallecano','alaves','las palmas','leganes','espanyol','valladolid'];
+  const serieATeams = ['inter','milan','juventus','napoli','roma','lazio','atalanta','fiorentina','bologna','torino','monza','genoa','cagliari','udinese','empoli','verona','lecce','como','parma','venezia'];
+  const argTeams = ['boca juniors','river plate','racing','independiente','san lorenzo','velez','estudiantes','talleres','argentinos juniors','union','godoy cruz','lanus','newells','rosario central','banfield','defensa y justicia','platense','sarmiento','tigre','gimnasia'];
+  const brazilTeams = ['flamengo','palmeiras','atletico mineiro','fluminense','corinthians','sao paulo','gremio','cruzeiro','botafogo','internacional','santos','bahia','fortaleza','athletico paranaense','vasco da gama','coritiba','america mineiro','goias','cuiaba','bragantino'];
+  
+  if (ligaMxTeams.some(t => combined.includes(t))) return 'liga mx';
+  if (eplTeams.some(t => combined.includes(t))) return 'epl';
+  if (laLigaTeams.some(t => combined.includes(t))) return 'la liga';
+  if (serieATeams.some(t => combined.includes(t))) return 'serie a';
+  if (argTeams.some(t => combined.includes(t))) return 'argentina primera division';
+  if (brazilTeams.some(t => combined.includes(t))) return 'brasileiro serie a';
+  
+  return 'other';
+}
+
+function setLeagueFilter(league, btn) {
+  activeLeagueFilter = league;
+  document.querySelectorAll('.league-filters button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (allMarkets.length) renderMarkets(allMarkets);
+}
+
+function buildLeagueFilters(markets) {
+  const leagueCounts = {};
+  markets.forEach(m => {
+    const lg = m._league || 'other';
+    leagueCounts[lg] = (leagueCounts[lg] || 0) + 1;
+  });
+  
+  const container = document.getElementById('leagueFilters');
+  let html = `<button class="${activeLeagueFilter === 'all' ? 'active' : ''}" onclick="setLeagueFilter('all', this)">All (${markets.length})</button>`;
+  
+  Object.keys(LEAGUE_LABELS).forEach(key => {
+    if (key === 'all') return;
+    const count = leagueCounts[key] || 0;
+    if (count > 0) {
+      html += `<button class="${activeLeagueFilter === key ? 'active' : ''}" onclick="setLeagueFilter('${key}', this)">${LEAGUE_LABELS[key]} (${count})</button>`;
+    }
+  });
+  
+  // Add "Other" if there are unmatched leagues
+  const otherCount = leagueCounts['other'] || 0;
+  if (otherCount > 0) {
+    html += `<button class="${activeLeagueFilter === 'other' ? 'active' : ''}" onclick="setLeagueFilter('other', this)">Other (${otherCount})</button>`;
+  }
+  
+  container.innerHTML = html;
+}
+
+/* ═══ FETCH MARKETS ═══ */
+async function fetchMarkets() {
+  const c = document.getElementById('marketsContent');
+  const st = document.getElementById('statusText');
+  c.innerHTML = '<div class="state-msg"><div class="spinner"></div><div>Fetching soccer markets...</div></div>';
+  st.textContent = 'Connecting...';
+
+  try {
+    const KALSHI_BASE = 'https://api.elections.kalshi.com/trade-api/v2';
+    
+    // CORS proxies to try in order
+    const PROXIES = [
+      (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+      (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      (url) => url  // direct attempt as last resort
+    ];
+    
+    // Find a working proxy
+    let proxyFn = null;
+    for (const pf of PROXIES) {
+      try {
+        const testUrl = pf(`${KALSHI_BASE}/markets?status=open&limit=1`);
+        const testResp = await fetch(testUrl, { signal: AbortSignal.timeout(8000) });
+        if (testResp.ok) {
+          const testData = await testResp.json();
+          if (testData.markets) { proxyFn = pf; break; }
+        }
+      } catch(e) { continue; }
+    }
+    
+    if (!proxyFn) throw new Error('All connection methods failed');
+    
+    let soccer = [];
+
+    // Fetch all open markets in batches and filter by category
+    let cursor = '';
+    for (let i = 0; i < 5; i++) {
+      const kalshiUrl = `${KALSHI_BASE}/markets?status=open&limit=200${cursor ? '&cursor=' + cursor : ''}`;
+      const url = proxyFn(kalshiUrl);
+      const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!resp.ok) throw new Error('API ' + resp.status);
+      const data = await resp.json();
+      
+      if (data.markets) {
+        const filtered = data.markets.filter(m => {
+          const cat = (m.category || '').toLowerCase();
+          const ev = (m.event_ticker || '').toLowerCase();
+          const title = (m.title || '').toLowerCase();
+          
+          // Primary: Kalshi category tag
+          if (cat === 'soccer' || cat === 'football') return true;
+          
+          // Secondary: event ticker patterns
+          if (ev.includes('soccer') || ev.includes('futbol')) return true;
+          
+          // Tertiary: known league names in title/event
+          const combined = ev + ' ' + title;
+          const leagueKeywords = [
+            'liga mx', 'la liga', 'premier league', 'epl', 'serie a', 'bundesliga',
+            'ligue 1', 'mls', 'champions league', 'ucl', 'europa league',
+            'brasileiro', 'argentina primera', 'colombian', 'dimayor',
+            'eredivisie', 'liga portugal', 'super lig', 'saudi pro',
+            'j1 league', 'k league', 'fa cup', 'copa del rey', 'coppa italia',
+            'dfb pokal', 'conference league', 'concacaf', 'afc champions',
+            'scottish premiership', 'efl championship', 'nwsl',
+            'ekstraklasa', 'danish superliga', 'belgian pro', 'swiss super',
+            'greek super', 'croatia hnl', 'serie b', 'la liga 2', 'bundesliga 2',
+            'chile liga', 'uruguay primera', 'venezuela liga', 'ecuador ligapro',
+            'world cup', 'fifa', 'intl friendl'
+          ];
+          return leagueKeywords.some(kw => combined.includes(kw));
+        });
+        soccer = [...soccer, ...filtered];
+      }
+
+      cursor = data.cursor || '';
+      if (!cursor) break;
+    }
+
+    // Deduplicate
+    const seen = new Set();
+    soccer = soccer.filter(m => {
+      if (seen.has(m.ticker)) return false;
+      seen.add(m.ticker);
+      return true;
+    });
+    
+    // Tag each market with detected league
+    soccer.forEach(m => { m._league = detectLeague(m); });
+
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    st.textContent = soccer.length + ' soccer markets';
+    renderMarkets(soccer);
+
+  } catch (err) {
+    console.error(err);
+    st.textContent = 'Using demo data';
+    loadDemo();
+  }
+}
+
+function loadDemo() {
+  const demo = [
+    // Liga MX
+    { title: "Club America vs Cruz Azul", event_ticker: "LIGA-MX", close_time: new Date(Date.now()+864e5).toISOString(), yes_bid_dollars:"0.68", no_bid_dollars:"0.28", volume_fp:"45200", status:"open" },
+    { title: "Chivas vs Toluca", event_ticker: "LIGA-MX", close_time: new Date(Date.now()+432e5).toISOString(), yes_bid_dollars:"0.72", no_bid_dollars:"0.24", volume_fp:"31800", status:"open" },
+    { title: "Monterrey vs Tigres", event_ticker: "LIGA-MX", close_time: new Date(Date.now()+2592e5).toISOString(), yes_bid_dollars:"0.48", no_bid_dollars:"0.48", volume_fp:"8200", status:"open" },
+    { title: "Leon vs Mazatlan", event_ticker: "LIGA-MX", close_time: new Date(Date.now()+1296e5).toISOString(), yes_bid_dollars:"0.82", no_bid_dollars:"0.14", volume_fp:"5400", status:"open" },
+    { title: "Necaxa vs Puebla", event_ticker: "LIGA-MX", close_time: new Date(Date.now()+1728e5).toISOString(), yes_bid_dollars:"0.61", no_bid_dollars:"0.35", volume_fp:"12100", status:"open" },
+    // La Liga
+    { title: "Real Madrid vs Atletico Madrid", event_ticker: "LA-LIGA", close_time: new Date(Date.now()+1728e5).toISOString(), yes_bid_dollars:"0.55", no_bid_dollars:"0.41", volume_fp:"128500", status:"open" },
+    { title: "Barcelona vs Real Sociedad", event_ticker: "LA-LIGA", close_time: new Date(Date.now()+2592e5).toISOString(), yes_bid_dollars:"0.71", no_bid_dollars:"0.25", volume_fp:"67300", status:"open" },
+    // EPL
+    { title: "Arsenal vs Liverpool", event_ticker: "EPL", close_time: new Date(Date.now()+3456e5).toISOString(), yes_bid_dollars:"0.42", no_bid_dollars:"0.54", volume_fp:"215000", status:"open" },
+    { title: "Man City vs Chelsea", event_ticker: "EPL", close_time: new Date(Date.now()+4320e5).toISOString(), yes_bid_dollars:"0.63", no_bid_dollars:"0.33", volume_fp:"178000", status:"open" },
+    // Serie A
+    { title: "Inter vs Juventus", event_ticker: "SERIE-A", close_time: new Date(Date.now()+2160e5).toISOString(), yes_bid_dollars:"0.58", no_bid_dollars:"0.38", volume_fp:"89000", status:"open" },
+    { title: "Napoli vs Roma", event_ticker: "SERIE-A", close_time: new Date(Date.now()+3024e5).toISOString(), yes_bid_dollars:"0.66", no_bid_dollars:"0.30", volume_fp:"52000", status:"open" },
+    // Bundesliga
+    { title: "Bayern Munich vs Borussia Dortmund", event_ticker: "BUNDESLIGA", close_time: new Date(Date.now()+2592e5).toISOString(), yes_bid_dollars:"0.64", no_bid_dollars:"0.32", volume_fp:"95000", status:"open" },
+    // Ligue 1
+    { title: "PSG vs Marseille", event_ticker: "LIGUE-1", close_time: new Date(Date.now()+3456e5).toISOString(), yes_bid_dollars:"0.75", no_bid_dollars:"0.21", volume_fp:"71000", status:"open" },
+    // Champions League
+    { title: "Real Madrid vs Arsenal", event_ticker: "CHAMPIONS-LEAGUE", close_time: new Date(Date.now()+5184e5).toISOString(), yes_bid_dollars:"0.52", no_bid_dollars:"0.44", volume_fp:"320000", status:"open" },
+    // MLS
+    { title: "LAFC vs Inter Miami", event_ticker: "MLS", close_time: new Date(Date.now()+1728e5).toISOString(), yes_bid_dollars:"0.54", no_bid_dollars:"0.42", volume_fp:"35000", status:"open" },
+    // Argentina
+    { title: "Boca Juniors vs River Plate", event_ticker: "ARGENTINA-PRIMERA", close_time: new Date(Date.now()+4320e5).toISOString(), yes_bid_dollars:"0.46", no_bid_dollars:"0.50", volume_fp:"42000", status:"open" },
+    { title: "Racing vs Independiente", event_ticker: "ARGENTINA-PRIMERA", close_time: new Date(Date.now()+3456e5).toISOString(), yes_bid_dollars:"0.59", no_bid_dollars:"0.37", volume_fp:"18500", status:"open" },
+    // Brazil
+    { title: "Flamengo vs Palmeiras", event_ticker: "BRASILEIRO-SERIE-A", close_time: new Date(Date.now()+5184e5).toISOString(), yes_bid_dollars:"0.47", no_bid_dollars:"0.49", volume_fp:"56000", status:"open" },
+    { title: "Corinthians vs Sao Paulo", event_ticker: "BRASILEIRO-SERIE-A", close_time: new Date(Date.now()+6048e5).toISOString(), yes_bid_dollars:"0.44", no_bid_dollars:"0.52", volume_fp:"28000", status:"open" },
+    // Colombia
+    { title: "Atletico Nacional vs Millonarios", event_ticker: "COLOMBIAN-DIMAYOR", close_time: new Date(Date.now()+3888e5).toISOString(), yes_bid_dollars:"0.61", no_bid_dollars:"0.35", volume_fp:"15000", status:"open" },
+    // Europa League
+    { title: "Athletic Bilbao vs Lazio", event_ticker: "EUROPA-LEAGUE", close_time: new Date(Date.now()+6912e5).toISOString(), yes_bid_dollars:"0.50", no_bid_dollars:"0.46", volume_fp:"47000", status:"open" },
+  ];
+  demo.forEach(m => { m._league = detectLeague(m); });
+  document.getElementById('statusText').textContent = 'Demo mode - ' + demo.length + ' sample markets';
+  renderMarkets(demo);
+}
+
+/* ═══ INIT ═══ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderBets();
+  fetchMarkets();
+});
+</script>
+</body>
+</html>
