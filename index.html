@@ -1514,31 +1514,16 @@ async function fetchMarkets() {
     // Methods to try
     const METHODS = [
       { 
+        name: 'cloudflare-worker',
+        fetch: (url) => fetch(`https://falling-poetry-6293.mauricioayon.workers.dev/?url=${encodeURIComponent(url)}`, {
+          signal: AbortSignal.timeout(15000)
+        })
+      },
+      { 
         name: 'direct',
         fetch: (url) => fetch(url, { 
           method: 'GET',
           headers: { 'Accept': 'application/json' }
-        })
-      },
-      { 
-        name: 'no-cors-parse',
-        fetch: (url) => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {
-          signal: AbortSignal.timeout(12000)
-        }).then(async r => {
-          const wrapper = await r.json();
-          return new Response(wrapper.contents, { status: 200, headers: { 'Content-Type': 'application/json' }});
-        })
-      },
-      {
-        name: 'corsproxy.io',
-        fetch: (url) => fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {
-          signal: AbortSignal.timeout(12000)
-        })
-      },
-      {
-        name: 'thingproxy',
-        fetch: (url) => fetch(`https://thingproxy.freeboard.io/fetch/${url}`, {
-          signal: AbortSignal.timeout(12000)
         })
       }
     ];
