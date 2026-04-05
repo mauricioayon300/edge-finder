@@ -1511,36 +1511,86 @@ async function fetchMarkets() {
   try {
     const KALSHI_BASE = 'https://api.elections.kalshi.com/trade-api/v2';
     
-    // CORS proxies to try in order
-    const PROXIES = [
-      (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-      (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-      (url) => url  // direct attempt as last resort
+    // Methods to try
+    const METHODS = [
+      { 
+        name: 'direct',
+        fetch: (url) => fetch(url, { 
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        })
+      },
+      { 
+        name: 'no-cors-parse',
+        fetch: (url) => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {
+          signal: AbortSignal.timeout(12000)
+        }).then(async r => {
+          const wrapper = await r.json();
+          return new Response(wrapper.contents, { status: 200, headers: { 'Content-Type': 'application/json' }});
+        })
+      },
+      {
+        name: 'corsproxy.io',
+        fetch: (url) => fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {
+          signal: AbortSignal.timeout(12000)
+        })
+      },
+      {
+        name: 'thingproxy',
+        fetch: (url) => fetch(`https://thingproxy.freeboard.io/fetch/${url}`, {
+          signal: AbortSignal.timeout(12000)
+        })
+      }
     ];
     
-    // Find a working proxy
-    let proxyFn = null;
-    for (const pf of PROXIES) {
+    let workingMethod = null;
+    let errors = [];
+    
+    for (const method of METHODS) {
       try {
-        const testUrl = pf(`${KALSHI_BASE}/markets?status=open&limit=1`);
-        const testResp = await fetch(testUrl, { signal: AbortSignal.timeout(8000) });
+        st.textContent = `Trying ${method.name}...`;
+        const testResp = await method.fetch(`${KALSHI_BASE}/markets?status=open&limit=1`);
         if (testResp.ok) {
           const testData = await testResp.json();
-          if (testData.markets) { proxyFn = pf; break; }
+          if (testData.markets) { 
+            workingMethod = method;
+            break; 
+          } else {
+            errors.push(`${method.name}: unexpected response format`);
+          }
+        } else {
+          errors.push(`${method.name}: HTTP ${testResp.status}`);
         }
-      } catch(e) { continue; }
+      } catch(e) { 
+        errors.push(`${method.name}: ${e.message}`);
+        continue; 
+      }
     }
     
-    if (!proxyFn) throw new Error('All connection methods failed');
+    if (!workingMethod) {
+      console.log('All methods failed:', errors);
+      st.textContent = 'Demo mode';
+      c.innerHTML = `
+        <div class="state-msg" style="padding:30px">
+          <div style="color:var(--amber);margin-bottom:8px">Could not reach Kalshi API</div>
+          <div style="font-size:11px;color:var(--text-dim);text-align:left;max-width:400px;line-height:1.8">
+            ${errors.map(e => '- ' + e).join('<br>')}
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--text-mid)">Loading demo data. The Kalshi API blocks browser requests. A backend proxy is needed for live data.</div>
+        </div>
+      `;
+      setTimeout(() => loadDemo(), 1500);
+      return;
+    }
     
+    st.textContent = `Connected via ${workingMethod.name}`;
     let soccer = [];
 
-    // Fetch all open markets in batches and filter by category
+    // Fetch all open markets in batches
     let cursor = '';
     for (let i = 0; i < 5; i++) {
       const kalshiUrl = `${KALSHI_BASE}/markets?status=open&limit=200${cursor ? '&cursor=' + cursor : ''}`;
-      const url = proxyFn(kalshiUrl);
-      const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      const resp = await workingMethod.fetch(kalshiUrl);
       if (!resp.ok) throw new Error('API ' + resp.status);
       const data = await resp.json();
       
