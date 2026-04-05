@@ -1571,48 +1571,90 @@ async function fetchMarkets() {
     st.textContent = `Connected via ${workingMethod.name}`;
     let soccer = [];
 
-    // Fetch all open markets in batches
-    let cursor = '';
-    for (let i = 0; i < 5; i++) {
-      const kalshiUrl = `${KALSHI_BASE}/markets?status=open&limit=200${cursor ? '&cursor=' + cursor : ''}`;
-      const resp = await workingMethod.fetch(kalshiUrl);
-      if (!resp.ok) throw new Error('API ' + resp.status);
-      const data = await resp.json();
-      
-      if (data.markets) {
-        const filtered = data.markets.filter(m => {
-          const cat = (m.category || '').toLowerCase();
-          const ev = (m.event_ticker || '').toLowerCase();
-          const title = (m.title || '').toLowerCase();
-          
-          // Primary: Kalshi category tag
-          if (cat === 'soccer' || cat === 'football') return true;
-          
-          // Secondary: event ticker patterns
-          if (ev.includes('soccer') || ev.includes('futbol')) return true;
-          
-          // Tertiary: known league names in title/event
-          const combined = ev + ' ' + title;
-          const leagueKeywords = [
-            'liga mx', 'la liga', 'premier league', 'epl', 'serie a', 'bundesliga',
-            'ligue 1', 'mls', 'champions league', 'ucl', 'europa league',
-            'brasileiro', 'argentina primera', 'colombian', 'dimayor',
-            'eredivisie', 'liga portugal', 'super lig', 'saudi pro',
-            'j1 league', 'k league', 'fa cup', 'copa del rey', 'coppa italia',
-            'dfb pokal', 'conference league', 'concacaf', 'afc champions',
-            'scottish premiership', 'efl championship', 'nwsl',
-            'ekstraklasa', 'danish superliga', 'belgian pro', 'swiss super',
-            'greek super', 'croatia hnl', 'serie b', 'la liga 2', 'bundesliga 2',
-            'chile liga', 'uruguay primera', 'venezuela liga', 'ecuador ligapro',
-            'world cup', 'fifa', 'intl friendl'
-          ];
-          return leagueKeywords.some(kw => combined.includes(kw));
-        });
-        soccer = [...soccer, ...filtered];
+    // Kalshi soccer series tickers - query each league directly
+    const SOCCER_SERIES = [
+      'KXLIGAMXGAME', 'KXLIGAMX',
+      'KXEPLGAME', 'KXEPL',
+      'KXLALIGAGAME', 'KXLALIGA',
+      'KXSERIEAGAME', 'KXSERIEA',
+      'KXBUNDESLIGAGAME', 'KXBUNDESLIGA',
+      'KXLIGUE1GAME', 'KXLIGUE1',
+      'KXUCLGAME', 'KXUCL', 'KXCHAMPIONSLEAGUE',
+      'KXEUROPALEAGUE', 'KXUEL',
+      'KXMLSGAME', 'KXMLS',
+      'KXBRASILEIROGAME', 'KXBRASILEIRO',
+      'KXARGENTINAGAME', 'KXARGENTINA',
+      'KXCOLOMBIAGAME', 'KXCOLOMBIA',
+      'KXFIFAWC', 'KXWORLDCUP',
+      'KXCONFERENCELEAGUE',
+      'KXFACUP', 'KXCOPADELREY', 'KXCOPPAITALIA', 'KXDFBPOKAL',
+      'KXCONCACAF',
+    ];
+    
+    // Also try the events endpoint to discover soccer events
+    const eventsFetches = [
+      // Fetch events with nested markets for broader coverage
+      `${KALSHI_BASE}/events?status=open&limit=200&with_nested_markets=true`,
+    ];
+    
+    // Strategy 1: Try series-based market queries
+    st.textContent = 'Scanning soccer leagues...';
+    const seriesPromises = SOCCER_SERIES.map(async (series) => {
+      try {
+        const resp = await workingMethod.fetch(
+          `${KALSHI_BASE}/markets?series_ticker=${series}&status=open&limit=200`
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          return data.markets || [];
+        }
+      } catch(e) {}
+      return [];
+    });
+    
+    const seriesResults = await Promise.allSettled(seriesPromises);
+    seriesResults.forEach(r => {
+      if (r.status === 'fulfilled' && r.value.length > 0) {
+        soccer = [...soccer, ...r.value];
       }
-
-      cursor = data.cursor || '';
-      if (!cursor) break;
+    });
+    
+    // Strategy 2: If series queries found little, scan all markets with keyword filter
+    if (soccer.length < 5) {
+      st.textContent = 'Broadening search...';
+      let cursor = '';
+      for (let i = 0; i < 10; i++) {
+        try {
+          const resp = await workingMethod.fetch(
+            `${KALSHI_BASE}/markets?status=open&limit=200${cursor ? '&cursor=' + cursor : ''}`
+          );
+          if (!resp.ok) break;
+          const data = await resp.json();
+          
+          if (data.markets) {
+            const filtered = data.markets.filter(m => {
+              const t = (m.title || '').toLowerCase();
+              const ev = (m.event_ticker || '').toLowerCase();
+              const series = (m.series_ticker || '').toLowerCase();
+              
+              const keywords = [
+                'liga mx', 'la liga', 'premier league', 'epl', 'serie a', 'bundesliga',
+                'ligue 1', 'mls', 'champions league', 'ucl', 'europa league',
+                'brasileiro', 'argentina', 'colombian', 'dimayor', 'soccer',
+                'futbol', 'football', 'fc ', ' cf ', 'world cup', 'fifa',
+                'concacaf', 'copa', 'fa cup'
+              ];
+              
+              const combined = t + ' ' + ev + ' ' + series;
+              return keywords.some(kw => combined.includes(kw));
+            });
+            soccer = [...soccer, ...filtered];
+          }
+          
+          cursor = data.cursor || '';
+          if (!cursor) break;
+        } catch(e) { break; }
+      }
     }
 
     // Deduplicate
